@@ -18,6 +18,10 @@ class DashboardFragment : Fragment() {
 
 
 // juje e smeshno
+    // mnogo mnogo mnogo smeshno
+
+
+    //to e naj-skeshnoto
     private val binding get() = _binding!!
 
     override fun onCreateView(
