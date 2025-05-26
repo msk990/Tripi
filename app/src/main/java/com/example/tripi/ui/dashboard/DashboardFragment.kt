@@ -15,6 +15,9 @@ class DashboardFragment : Fragment() {
 
     // This property is only valid between onCreateView and
     // onDestroyView.
+
+
+// juje e smeshno
     private val binding get() = _binding!!
 
     override fun onCreateView(
