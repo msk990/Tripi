@@ -14,7 +14,7 @@ navigationFragmentKtx = "2.9.0"
 navigationUiKtx = "2.9.0"
 cameraX = "1.4.2"
 mlkitObjectDetection = "17.0.2"
-objectDetection = "17.0.1"
+objectDetection = "17.0.2"
 visionCommon = "17.3.0"
 
 [libraries]
