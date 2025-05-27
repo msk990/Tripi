@@ -17,7 +17,7 @@ class DashboardFragment : Fragment() {
     // onDestroyView.
 
 
-
+// juje e smeshno
     private val binding get() = _binding!!
 
     override fun onCreateView(
