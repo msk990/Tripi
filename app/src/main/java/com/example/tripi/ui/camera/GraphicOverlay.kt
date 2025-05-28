@@ -1,9 +1,12 @@
 package com.example.tripi.ui.camera
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
 import com.google.mlkit.vision.objects.DetectedObject
@@ -15,7 +18,7 @@ class GraphicOverlay @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val boxPaint = Paint().apply {
-        color = Color.RED
+        color = Color.parseColor("#ADD8E6")
         style = Paint.Style.STROKE
         strokeWidth = 8f
     }
@@ -25,6 +28,10 @@ class GraphicOverlay @JvmOverloads constructor(
         textSize = 48f
         textAlign = Paint.Align.CENTER
         style = Paint.Style.FILL
+    }
+
+    private val homeSticker: Bitmap by lazy {
+        context.assets.open("stickers/hi.png").use { BitmapFactory.decodeStream(it) }
     }
 
     private var objects: List<DetectedObject> = emptyList()
@@ -52,6 +59,22 @@ class GraphicOverlay @JvmOverloads constructor(
                 val centerX = (left + right) / 2f
                 val centerY = (top + bottom) / 2f - (textPaint.ascent() + textPaint.descent()) / 2f
                 canvas.drawText(label, centerX, centerY, textPaint)
+
+                if (label.lowercase().contains("home")) {
+                    val boxWidth = right - left
+                    val stickerWidth = boxWidth * 0.9f
+                    val scale = stickerWidth / homeSticker.width
+                    val stickerHeight = homeSticker.height * scale
+                    val stickerLeft = left + (boxWidth - stickerWidth) / 2f
+                    val stickerTop = top + ((bottom - top) - stickerHeight) / 2f
+                    val destRect = RectF(
+                        stickerLeft,
+                        stickerTop,
+                        stickerLeft + stickerWidth,
+                        stickerTop + stickerHeight
+                    )
+                    canvas.drawBitmap(homeSticker, null, destRect, null)
+                }
             }
         }
     }
