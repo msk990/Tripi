@@ -1,9 +1,12 @@
 package com.example.tripi.ui.camera
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
+import android.graphics.Rect
 import android.util.AttributeSet
 import android.view.View
 import com.google.mlkit.vision.objects.DetectedObject
@@ -18,6 +21,12 @@ class GraphicOverlay @JvmOverloads constructor(
         color = Color.RED
         style = Paint.Style.STROKE
         strokeWidth = 8f
+    }
+
+    private val stickers: List<Bitmap> = listOf("hi.png", "sing.png").map { name ->
+        context.assets.open("stickers/$name").use { input ->
+            BitmapFactory.decodeStream(input)
+        }
     }
 
     private var objects: List<DetectedObject> = emptyList()
@@ -40,6 +49,10 @@ class GraphicOverlay @JvmOverloads constructor(
             val right = box.right * scaleXFactor
             val bottom = box.bottom * scaleYFactor
             canvas.drawRect(left, top, right, bottom, boxPaint)
+
+            val sticker = stickers.random()
+            val destRect = Rect(left.toInt(), top.toInt(), right.toInt(), bottom.toInt())
+            canvas.drawBitmap(sticker, null, destRect, null)
         }
     }
 }
