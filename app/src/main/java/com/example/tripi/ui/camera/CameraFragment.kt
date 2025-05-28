@@ -28,6 +28,7 @@ class CameraFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var objectDetector: ObjectDetector
+    private var isProcessing = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -77,6 +78,11 @@ class CameraFragment : Fragment() {
     private fun processImageProxy(imageProxy: ImageProxy) {
         val mediaImage = imageProxy.image
         if (mediaImage != null) {
+            if (isProcessing) {
+                imageProxy.close()
+                return
+            }
+            isProcessing = true
             val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
             objectDetector.process(image)
                 .addOnSuccessListener { objects ->
@@ -85,7 +91,10 @@ class CameraFragment : Fragment() {
                 .addOnFailureListener { e ->
                     Log.e(TAG, "Object detection failed", e)
                 }
-                .addOnCompleteListener { imageProxy.close() }
+                .addOnCompleteListener {
+                    isProcessing = false
+                    imageProxy.close()
+                }
         } else {
             imageProxy.close()
         }
