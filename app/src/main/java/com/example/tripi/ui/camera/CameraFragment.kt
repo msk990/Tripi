@@ -14,6 +14,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AlertDialog
 import com.example.tripi.databinding.FragmentCameraBinding
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.objects.ObjectDetection
@@ -50,6 +51,18 @@ class CameraFragment : Fragment() {
             requestPermissions(arrayOf(Manifest.permission.CAMERA), REQUEST_CAMERA_PERMISSION)
         }
         return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+        binding.overlay.setStickerClickListener(object : GraphicOverlay.StickerClickListener {
+            override fun onStickerClicked() {
+                AlertDialog.Builder(requireContext())
+                    .setMessage("Hobbit is a funny bunny")
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+        })
     }
 
     private fun startCamera() {

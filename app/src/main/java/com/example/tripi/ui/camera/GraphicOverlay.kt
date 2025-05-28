@@ -7,6 +7,7 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
+import android.view.MotionEvent
 import android.util.AttributeSet
 import android.view.View
 import com.google.mlkit.vision.objects.DetectedObject
@@ -38,6 +39,17 @@ class GraphicOverlay @JvmOverloads constructor(
     private var scaleXFactor: Float = 1f
     private var scaleYFactor: Float = 1f
 
+    private var stickerRect: RectF? = null
+    private var stickerClickListener: StickerClickListener? = null
+
+    interface StickerClickListener {
+        fun onStickerClicked()
+    }
+
+    fun setStickerClickListener(listener: StickerClickListener) {
+        stickerClickListener = listener
+    }
+
     fun update(objects: List<DetectedObject>, imageWidth: Int, imageHeight: Int) {
         this.objects = objects
         scaleXFactor = width.toFloat() / imageWidth.toFloat()
@@ -47,6 +59,7 @@ class GraphicOverlay @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
+        stickerRect = null
         for (obj in objects) {
             val box = obj.boundingBox
             val left = box.left * scaleXFactor
@@ -73,9 +86,27 @@ class GraphicOverlay @JvmOverloads constructor(
                         stickerLeft + stickerWidth,
                         stickerTop + stickerHeight
                     )
+                    stickerRect = destRect
                     canvas.drawBitmap(homeSticker, null, destRect, null)
                 }
             }
         }
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                if (stickerRect?.contains(event.x, event.y) == true) {
+                    return true
+                }
+            }
+            MotionEvent.ACTION_UP -> {
+                if (stickerRect?.contains(event.x, event.y) == true) {
+                    stickerClickListener?.onStickerClicked()
+                    return true
+                }
+            }
+        }
+        return super.onTouchEvent(event)
     }
 }
