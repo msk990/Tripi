@@ -15,11 +15,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.tripi.databinding.FragmentCameraBinding
-import com.google.mlkit.common.model.LocalModel
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.objects.ObjectDetection
-import com.google.mlkit.vision.objects.ObjectDetector
-import com.google.mlkit.vision.objects.custom.CustomObjectDetectorOptions
+import android.graphics.Bitmap
+import android.graphics.ImageFormat
+import android.graphics.Rect
+import android.graphics.YuvImage
+import android.graphics.Matrix
+import android.graphics.BitmapFactory
+import com.example.tripi.ui.camera.ObjectDetectionHelper
+import org.tensorflow.lite.task.vision.detector.Detection
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -28,7 +32,7 @@ class CameraFragment : Fragment() {
     private var _binding: FragmentCameraBinding? = null
     private val binding get() = _binding!!
     private lateinit var cameraExecutor: ExecutorService
-    private lateinit var objectDetector: ObjectDetector
+    private lateinit var objectDetectorHelper: ObjectDetectionHelper
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -38,19 +42,7 @@ class CameraFragment : Fragment() {
         _binding = FragmentCameraBinding.inflate(inflater, container, false)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
-        val localModel = LocalModel.Builder()
-            .setAssetFilePath("models/1.tflite")
-            .build()
-
-        val options = CustomObjectDetectorOptions.Builder(localModel)
-            .setDetectorMode(CustomObjectDetectorOptions.STREAM_MODE)
-            .enableMultipleObjects()
-            .enableClassification()
-            .setMaxPerObjectLabelCount(1)
-            .setClassificationConfidenceThreshold(0.5f)
-            .build()
-
-        objectDetector = ObjectDetection.getClient(options)
+        objectDetectorHelper = ObjectDetectionHelper(requireContext())
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
             == PackageManager.PERMISSION_GRANTED
         ) {
@@ -84,20 +76,37 @@ class CameraFragment : Fragment() {
     }
 
     private fun processImageProxy(imageProxy: ImageProxy) {
-        val mediaImage = imageProxy.image
-        if (mediaImage != null) {
-            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            objectDetector.process(image)
-                .addOnSuccessListener { objects ->
-                    binding.overlay.update(objects, image.width, image.height)
-                }
-                .addOnFailureListener { e ->
-                    Log.e(TAG, "Object detection failed", e)
-                }
-                .addOnCompleteListener { imageProxy.close() }
-        } else {
-            imageProxy.close()
-        }
+        val bitmap = imageProxyToBitmap(imageProxy)
+        val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees.toFloat())
+        val results: List<Detection> = objectDetectorHelper.detect(rotated)
+        binding.overlay.update(results, rotated.width, rotated.height)
+        imageProxy.close()
+    }
+
+    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap {
+        val yBuffer = imageProxy.planes[0].buffer
+        val uBuffer = imageProxy.planes[1].buffer
+        val vBuffer = imageProxy.planes[2].buffer
+
+        val ySize = yBuffer.remaining()
+        val uSize = uBuffer.remaining()
+        val vSize = vBuffer.remaining()
+
+        val nv21 = ByteArray(ySize + uSize + vSize)
+        yBuffer.get(nv21, 0, ySize)
+        vBuffer.get(nv21, ySize, vSize)
+        uBuffer.get(nv21, ySize + vSize, uSize)
+
+        val yuvImage = YuvImage(nv21, ImageFormat.NV21, imageProxy.width, imageProxy.height, null)
+        val out = java.io.ByteArrayOutputStream()
+        yuvImage.compressToJpeg(Rect(0, 0, imageProxy.width, imageProxy.height), 100, out)
+        val imageBytes = out.toByteArray()
+        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+    }
+
+    private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Float): Bitmap {
+        val matrix = Matrix().apply { postRotate(rotationDegrees) }
+        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
     }
 
     override fun onRequestPermissionsResult(
