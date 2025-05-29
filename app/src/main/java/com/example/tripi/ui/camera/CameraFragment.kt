@@ -15,10 +15,17 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.tripi.databinding.FragmentCameraBinding
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.objects.ObjectDetection
-import com.google.mlkit.vision.objects.ObjectDetector
-import com.google.mlkit.vision.objects.defaults.ObjectDetectorOptions
+import android.graphics.Bitmap
+import android.graphics.ImageFormat
+import android.graphics.Matrix
+import android.graphics.Rect
+import android.graphics.YuvImage
+import android.graphics.BitmapFactory
+import java.io.ByteArrayOutputStream
+import org.tensorflow.lite.task.vision.detector.ObjectDetector
+import org.tensorflow.lite.task.vision.detector.ObjectDetector.ObjectDetectorOptions
+import org.tensorflow.lite.task.vision.detector.Detection
+import org.tensorflow.lite.support.image.TensorImage
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -36,12 +43,15 @@ class CameraFragment : Fragment() {
     ): View {
         _binding = FragmentCameraBinding.inflate(inflater, container, false)
         cameraExecutor = Executors.newSingleThreadExecutor()
-        val options = ObjectDetectorOptions.Builder()
-            .setDetectorMode(ObjectDetectorOptions.STREAM_MODE)
-            .enableMultipleObjects()
-            .enableClassification()
+        val options = ObjectDetectorOptions.builder()
+            .setMaxResults(5)
+            .setScoreThreshold(0.5f)
             .build()
-        objectDetector = ObjectDetection.getClient(options)
+        objectDetector = ObjectDetector.createFromFileAndOptions(
+            requireContext(),
+            "models/1.tflite",
+            options
+        )
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
             == PackageManager.PERMISSION_GRANTED
         ) {
@@ -75,20 +85,36 @@ class CameraFragment : Fragment() {
     }
 
     private fun processImageProxy(imageProxy: ImageProxy) {
-        val mediaImage = imageProxy.image
-        if (mediaImage != null) {
-            val image = InputImage.fromMediaImage(mediaImage, imageProxy.imageInfo.rotationDegrees)
-            objectDetector.process(image)
-                .addOnSuccessListener { objects ->
-                    binding.overlay.update(objects, image.width, image.height)
-                }
-                .addOnFailureListener { e ->
-                    Log.e(TAG, "Object detection failed", e)
-                }
-                .addOnCompleteListener { imageProxy.close() }
-        } else {
-            imageProxy.close()
-        }
+        val bitmap = imageProxy.toBitmap().rotate(imageProxy.imageInfo.rotationDegrees.toFloat())
+        val tensorImage = TensorImage.fromBitmap(bitmap)
+        val results = objectDetector.detect(tensorImage)
+        binding.overlay.update(results, bitmap.width, bitmap.height)
+        imageProxy.close()
+    }
+
+    private fun ImageProxy.toBitmap(): Bitmap {
+        val yBuffer = planes[0].buffer
+        val uBuffer = planes[1].buffer
+        val vBuffer = planes[2].buffer
+        val ySize = yBuffer.remaining()
+        val uSize = uBuffer.remaining()
+        val vSize = vBuffer.remaining()
+        val nv21 = ByteArray(ySize + uSize + vSize)
+        yBuffer.get(nv21, 0, ySize)
+        vBuffer.get(nv21, ySize, vSize)
+        uBuffer.get(nv21, ySize + vSize, uSize)
+        val yuvImage = YuvImage(nv21, ImageFormat.NV21, width, height, null)
+        val out = ByteArrayOutputStream()
+        yuvImage.compressToJpeg(Rect(0, 0, width, height), 100, out)
+        val yuv = out.toByteArray()
+        return BitmapFactory.decodeByteArray(yuv, 0, yuv.size)
+    }
+
+    private fun Bitmap.rotate(degrees: Float): Bitmap {
+        if (degrees == 0f) return this
+        val matrix = Matrix()
+        matrix.postRotate(degrees)
+        return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
     }
 
     override fun onRequestPermissionsResult(

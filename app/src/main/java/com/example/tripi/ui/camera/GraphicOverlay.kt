@@ -9,7 +9,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
 import android.view.View
-import com.google.mlkit.vision.objects.DetectedObject
+import org.tensorflow.lite.task.vision.detector.Detection
 
 class GraphicOverlay @JvmOverloads constructor(
     context: Context,
@@ -34,11 +34,11 @@ class GraphicOverlay @JvmOverloads constructor(
         context.assets.open("stickers/hi.png").use { BitmapFactory.decodeStream(it) }
     }
 
-    private var objects: List<DetectedObject> = emptyList()
+    private var objects: List<Detection> = emptyList()
     private var scaleXFactor: Float = 1f
     private var scaleYFactor: Float = 1f
 
-    fun update(objects: List<DetectedObject>, imageWidth: Int, imageHeight: Int) {
+    fun update(objects: List<Detection>, imageWidth: Int, imageHeight: Int) {
         this.objects = objects
         scaleXFactor = width.toFloat() / imageWidth.toFloat()
         scaleYFactor = height.toFloat() / imageHeight.toFloat()
@@ -54,7 +54,7 @@ class GraphicOverlay @JvmOverloads constructor(
             val right = box.right * scaleXFactor
             val bottom = box.bottom * scaleYFactor
             canvas.drawRect(left, top, right, bottom, boxPaint)
-            val label = obj.labels.firstOrNull()?.text
+            val label = obj.categories.firstOrNull()?.label
             if (label != null) {
                 val centerX = (left + right) / 2f
                 val centerY = (top + bottom) / 2f - (textPaint.ascent() + textPaint.descent()) / 2f
