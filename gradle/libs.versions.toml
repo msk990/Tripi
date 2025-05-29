@@ -16,6 +16,7 @@ cameraX = "1.4.2"
 mlkitObjectDetection = "17.0.2"
 objectDetection = "17.0.2"
 visionCommon = "17.3.0"
+tflite = "0.4.3"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,8 @@ androidx-camera-view = { group = "androidx.camera", name = "camera-view", versio
 mlkit-object-detection = { group = "com.google.mlkit", name = "object-detection", version.ref = "mlkitObjectDetection" }
 object1-detection-v1701 = { module = "com.google.mlkit:object-detection", version.ref = "objectDetection" }
 vision-common = { group = "com.google.mlkit", name = "vision-common", version.ref = "visionCommon" }
+tflite-support = { group = "org.tensorflow", name = "tensorflow-lite-support", version.ref = "tflite" }
+tflite-task-vision = { group = "org.tensorflow", name = "tensorflow-lite-task-vision", version.ref = "tflite" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
