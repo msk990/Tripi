@@ -14,7 +14,6 @@ navigationFragmentKtx = "2.9.0"
 navigationUiKtx = "2.9.0"
 cameraX = "1.4.2"
 mlkitObjectDetection = "17.0.2"
-objectDetection = "17.0.2"
 visionCommon = "17.3.0"
 
 [libraries]
@@ -32,8 +31,7 @@ androidx-navigation-ui-ktx = { group = "androidx.navigation", name = "navigation
 androidx-camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
 androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }
-mlkit-object-detection = { group = "com.google.mlkit", name = "object-detection", version.ref = "mlkitObjectDetection" }
-object1-detection-v1701 = { module = "com.google.mlkit:object-detection", version.ref = "objectDetection" }
+mlkit-object-detection-custom = { group = "com.google.mlkit", name = "object-detection-custom", version.ref = "mlkitObjectDetection" }
 vision-common = { group = "com.google.mlkit", name = "vision-common", version.ref = "visionCommon" }
 
 [plugins]
