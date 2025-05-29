@@ -16,6 +16,7 @@ cameraX = "1.4.2"
 mlkitObjectDetection = "17.0.2"
 objectDetection = "17.0.2"
 visionCommon = "17.3.0"
+mlkitObjectDetectionCustom = "17.0.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -35,6 +36,7 @@ androidx-camera-view = { group = "androidx.camera", name = "camera-view", versio
 mlkit-object-detection = { group = "com.google.mlkit", name = "object-detection", version.ref = "mlkitObjectDetection" }
 object1-detection-v1701 = { module = "com.google.mlkit:object-detection", version.ref = "objectDetection" }
 vision-common = { group = "com.google.mlkit", name = "vision-common", version.ref = "visionCommon" }
+mlkit-object-detection-custom = { group = "com.google.mlkit", name = "object-detection-custom", version.ref = "mlkitObjectDetectionCustom" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
