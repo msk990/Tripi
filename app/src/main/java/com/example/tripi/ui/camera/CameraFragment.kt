@@ -60,9 +60,7 @@ class CameraFragment : Fragment() {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
             val imageAnalyzer = ImageAnalysis.Builder().build().also { analysis ->
-                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                    processImageProxy(imageProxy)
-                }
+                analysis.setAnalyzer(cameraExecutor, ObjectDetectionAnalyzer())
             }
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             try {
@@ -88,6 +86,12 @@ class CameraFragment : Fragment() {
                 .addOnCompleteListener { imageProxy.close() }
         } else {
             imageProxy.close()
+        }
+    }
+
+    private inner class ObjectDetectionAnalyzer : ImageAnalysis.Analyzer {
+        override fun analyze(imageProxy: ImageProxy) {
+            processImageProxy(imageProxy)
         }
     }
 
