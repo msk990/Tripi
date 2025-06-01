@@ -33,6 +33,10 @@ class CameraFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var objectDetectorHelper: ObjectDetectionHelper
+    @Volatile // Ensure visibility across threads
+    private var lastProcessedTimestampMs: Long = 0L
+    private val frameProcessingIntervalMs: Long = 200L // Process roughly every 1 second (1000 ms)
+
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -60,11 +64,39 @@ class CameraFragment : Fragment() {
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
-            val imageAnalyzer = ImageAnalysis.Builder().build().also { analysis ->
-                analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                    processImageProxy(imageProxy)
+            val imageAnalyzer = ImageAnalysis.Builder()
+                // Consider setting a lower target resolution if your model doesn't need high-res
+                // .setTargetResolution(Size(640, 480))
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // Important!
+                .build()
+                .also { analysis ->
+                    analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+                        val currentTimeMs = System.currentTimeMillis()
+                        if (currentTimeMs - lastProcessedTimestampMs >= frameProcessingIntervalMs) {
+                            // --- Time to process this frame ---
+                            lastProcessedTimestampMs = currentTimeMs
+
+                            // Your existing image processing logic:
+                            // 1. Convert ImageProxy to Bitmap (if needed by your ObjectDetector)
+                            //    or InputImage (if using ML Kit directly with ImageProxy)
+                            // 2. Run objectDetector.detect(...)
+                            // 3. Update overlay
+                            // Note: Remember to close the imageProxy when done with it,
+                            //       even if you decide to skip processing it.
+                            //       However, with STRATEGY_KEEP_ONLY_LATEST, if you don't
+                            //       process, it will be dropped, so closing is mainly for
+                            //       processed frames or if you take ownership of the ImageProxy
+                            //       for a longer duration (which you aren't here).
+
+                            // Example call to your existing processing function:
+                            processImageProxy(imageProxy)
+
+                        } else {
+                            // Not time to process yet, close the image to release it
+                            imageProxy.close()
+                        }
+                    }
                 }
-            }
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             try {
                 cameraProvider.unbindAll()
@@ -73,14 +105,31 @@ class CameraFragment : Fragment() {
                 Log.e(TAG, "Use case binding failed", e)
             }
         }, ContextCompat.getMainExecutor(requireContext()))
+
     }
 
+//    private fun processImageProxy(imageProxy: ImageProxy) {
+//        val bitmap = imageProxyToBitmap(imageProxy)
+//        val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees.toFloat())
+//        val results: List<Detection> = objectDetectorHelper.detect(rotated)
+//        binding.overlay.update(results, rotated.width, rotated.height)
+//        imageProxy.close()
+//    }
     private fun processImageProxy(imageProxy: ImageProxy) {
-        val bitmap = imageProxyToBitmap(imageProxy)
-        val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees.toFloat())
-        val results: List<Detection> = objectDetectorHelper.detect(rotated)
-        binding.overlay.update(results, rotated.width, rotated.height)
-        imageProxy.close()
+        // It's crucial that this function closes the imageProxy when it's done.
+        // Yours already does this, which is good.
+        try {
+            val bitmap = imageProxyToBitmap(imageProxy)
+            val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees.toFloat())
+            // Assuming objectDetectorHelper.detect() is synchronous and doesn't hold onto the bitmap for too long
+            val results: List<Detection> = objectDetectorHelper.detect(rotated)
+            binding.overlay.update(results, rotated.width, rotated.height)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in processImageProxy: ${e.message}", e)
+        } finally {
+            // Ensure imageProxy is always closed, even if an exception occurs
+            imageProxy.close()
+        }
     }
 
     private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap {

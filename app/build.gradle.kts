@@ -30,6 +30,12 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    androidResources {
+        noCompress.add(".tflite") // For all .tflite files
+        // If your model is in assets/models/1.tflite, the above line is sufficient.
+        // You could also be more specific if needed, but not usually necessary for just .tflite:
+        // noCompress.add("models/1.tflite") // If you only wanted to target this specific file path in assets
+    }
     kotlinOptions {
         jvmTarget = "11"
     }
