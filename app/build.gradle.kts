@@ -32,7 +32,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     androidResources {
+
         noCompress.add(".tflite")
+
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -57,7 +59,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
 
-    implementation("com.google.mlkit:object-detection:17.0.1")
+    implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
