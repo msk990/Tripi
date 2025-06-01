@@ -18,7 +18,7 @@ class ObjectDetectionHelper(context: Context) {
 
         val options = ObjectDetector.ObjectDetectorOptions.builder()
             .setMaxResults(4)
-            .setScoreThreshold(0.5f)
+            .setScoreThreshold(0.1f)
             .build()
         detector = ObjectDetector.createFromFileAndOptions(
             context,
