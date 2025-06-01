@@ -121,10 +121,12 @@ class CameraFragment : Fragment() {
         // Yours already does this, which is good.
         try {
             val bitmap = imageProxyToBitmap(imageProxy)
-            val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees.toFloat())
-            // Assuming objectDetectorHelper.detect() is synchronous and doesn't hold onto the bitmap for too long
-            val results: List<Detection> = objectDetectorHelper.detect(rotated)
-            binding.overlay.update(results, rotated.width, rotated.height)
+
+            val results: List<Detection> = objectDetectorHelper.detect(
+                bitmap, // Pass the unrotated bitmap
+                imageProxy.imageInfo.rotationDegrees // Pass the rotation degrees
+            )
+            binding.overlay.update(results, 320, 320)
         } catch (e: Exception) {
             Log.e(TAG, "Error in processImageProxy: ${e.message}", e)
         } finally {
