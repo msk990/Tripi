@@ -5,6 +5,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
+import android.util.Size
 import android.view.View
 import android.view.ViewGroup
 import androidx.camera.core.CameraSelector
@@ -65,10 +66,10 @@ class CameraFragment : Fragment() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
         cameraProviderFuture.addListener({
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
+            val preview = Preview.Builder().setTargetResolution(Size(320, 320)).build().also {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
-            val imageAnalyzer = ImageAnalysis.Builder().build().also { analysis ->
+            val imageAnalyzer = ImageAnalysis.Builder().setTargetResolution(Size(320, 320)).build().also { analysis ->
                 analysis.setAnalyzer(cameraExecutor) { imageProxy ->
                     processImageProxy(imageProxy)
                 }
