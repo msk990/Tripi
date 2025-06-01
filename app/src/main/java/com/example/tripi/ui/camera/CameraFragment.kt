@@ -77,19 +77,7 @@ class CameraFragment : Fragment() {
                             // --- Time to process this frame ---
                             lastProcessedTimestampMs = currentTimeMs
 
-                            // Your existing image processing logic:
-                            // 1. Convert ImageProxy to Bitmap (if needed by your ObjectDetector)
-                            //    or InputImage (if using ML Kit directly with ImageProxy)
-                            // 2. Run objectDetector.detect(...)
-                            // 3. Update overlay
-                            // Note: Remember to close the imageProxy when done with it,
-                            //       even if you decide to skip processing it.
-                            //       However, with STRATEGY_KEEP_ONLY_LATEST, if you don't
-                            //       process, it will be dropped, so closing is mainly for
-                            //       processed frames or if you take ownership of the ImageProxy
-                            //       for a longer duration (which you aren't here).
 
-                            // Example call to your existing processing function:
                             processImageProxy(imageProxy)
 
                         } else {
@@ -117,8 +105,7 @@ class CameraFragment : Fragment() {
 //        imageProxy.close()
 //    }
     private fun processImageProxy(imageProxy: ImageProxy) {
-        // It's crucial that this function closes the imageProxy when it's done.
-        // Yours already does this, which is good.
+
         try {
             val bitmap = imageProxyToBitmap(imageProxy)
 
