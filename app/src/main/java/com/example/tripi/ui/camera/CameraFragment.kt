@@ -36,6 +36,7 @@ class CameraFragment : Fragment() {
     @Volatile // Ensure visibility across threads
     private var lastProcessedTimestampMs: Long = 0L
     private val frameProcessingIntervalMs: Long = 200L // Process roughly every 1 second (1000 ms)
+    private val modelInputSize = 320
 
 
     override fun onCreateView(
@@ -65,8 +66,8 @@ class CameraFragment : Fragment() {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
             val imageAnalyzer = ImageAnalysis.Builder()
-                // Consider setting a lower target resolution if your model doesn't need high-res
-                // .setTargetResolution(Size(640, 480))
+                // Model expects 320x320 input, so we could set it explicitly if desired
+                // .setTargetResolution(Size(modelInputSize, modelInputSize))
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // Important!
                 .build()
                 .also { analysis ->

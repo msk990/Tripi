@@ -6,13 +6,13 @@ import android.graphics.Bitmap
 import org.tensorflow.lite.support.image.TensorImage
 import org.tensorflow.lite.task.vision.detector.Detection
 import org.tensorflow.lite.task.vision.detector.ObjectDetector
+import kotlin.math.min
 
-import org.tensorflow.lite.DataType
-import org.tensorflow.lite.support.common.ops.NormalizeOp
 
 class ObjectDetectionHelper(context: Context) {
 
     private val detector: ObjectDetector
+    private val inputImageSize = 320
 
     init {
 
@@ -27,8 +27,22 @@ class ObjectDetectionHelper(context: Context) {
         )
     }
 
+    /**
+     * Center-crops the input [Bitmap] to a square and resizes it to
+     * [inputImageSize] so it matches the 320×320 model input.
+     */
     fun detect(bitmap: Bitmap): List<Detection> {
-        val image = TensorImage.fromBitmap(bitmap)
+        val size = min(bitmap.width, bitmap.height)
+        val xOffset = (bitmap.width - size) / 2
+        val yOffset = (bitmap.height - size) / 2
+        val squared = Bitmap.createBitmap(bitmap, xOffset, yOffset, size, size)
+        val resized = Bitmap.createScaledBitmap(
+            squared,
+            inputImageSize,
+            inputImageSize,
+            true
+        )
+        val image = TensorImage.fromBitmap(resized)
         return detector.detect(image)
     }
 }
