@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt") // Apply the plugin directly by ID
 }
 
 android {
@@ -31,16 +32,16 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     androidResources {
-        noCompress.add(".tflite") // For all .tflite files
-        // If your model is in assets/models/1.tflite, the above line is sufficient.
-        // You could also be more specific if needed, but not usually necessary for just .tflite:
-        // noCompress.add("models/1.tflite") // If you only wanted to target this specific file path in assets
+
+        noCompress.add(".tflite")
+
     }
     kotlinOptions {
         jvmTarget = "11"
     }
     buildFeatures {
         viewBinding = true
+        dataBinding = true
     }
 }
 
@@ -57,7 +58,9 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+
     implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
