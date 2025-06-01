@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    id("org.jetbrains.kotlin.kapt") // Apply the plugin directly by ID
 }
 
 android {
@@ -30,11 +31,17 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    androidResources {
+
+        noCompress.add(".tflite")
+
+    }
     kotlinOptions {
         jvmTarget = "11"
     }
     buildFeatures {
         viewBinding = true
+        dataBinding = true
     }
 }
 
@@ -51,8 +58,9 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
-    implementation("com.google.mlkit:object-detection:17.0.1")
-    implementation("com.google.mlkit:object-detection-custom:17.0.1")
+
+    implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
