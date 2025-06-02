@@ -16,16 +16,19 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.tripi.databinding.FragmentCameraBinding
 import android.graphics.Bitmap
-import android.graphics.ImageFormat
-import android.graphics.Rect
-import android.graphics.YuvImage
-import android.graphics.Matrix
-import android.graphics.BitmapFactory
-import com.example.tripi.ui.camera.ObjectDetectionHelper
-import org.tensorflow.lite.task.vision.detector.Detection
-import java.io.ByteArrayOutputStream
+import android.graphics.Canvas
+import android.graphics.Color
+import com.example.tripi.ml.ObjectDetectionHelper
+
+import android.content.Context
+import android.os.Handler
+import android.os.HandlerThread
+import com.example.tripi.ImageUtils.rotateBitmap1
+import java.io.File
+import java.io.FileOutputStream
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
+import kotlin.math.max
 
 class CameraFragment : Fragment() {
 
@@ -38,12 +41,15 @@ class CameraFragment : Fragment() {
     private val frameProcessingIntervalMs: Long = 200L // Process roughly every 1 second (1000 ms)
     private val modelInputSize = 320
 
+    private val glThread = HandlerThread("GLThread").apply { start() }
+    private val glHandler = Handler(glThread.looper)
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
         _binding = FragmentCameraBinding.inflate(inflater, container, false)
         cameraExecutor = Executors.newSingleThreadExecutor()
 
@@ -104,49 +110,64 @@ class CameraFragment : Fragment() {
 //        binding.overlay.update(results, rotated.width, rotated.height)
 //        imageProxy.close()
 //    }
-    private fun processImageProxy(imageProxy: ImageProxy) {
-
+private fun processImageProxy(imageProxy: ImageProxy) {
+    glHandler.post {
         try {
-            val bitmap = imageProxyToBitmap(imageProxy)
+            Log.d("GpuConvert", "Starting OpenGL conversion on thread: ${Thread.currentThread().name}")
 
-            val results: List<Detection> = objectDetectorHelper.detect(
-                bitmap, // Pass the unrotated bitmap
-                imageProxy.imageInfo.rotationDegrees // Pass the rotation degrees
-            )
-            binding.overlay.update(results, 320, 320)
+            val bitmap = GpuYuvConverter.convert(imageProxy)
+
+            // You probably want to run this on the main thread:
+            requireActivity().runOnUiThread {
+                val rotated = rotateBitmap1(bitmap, imageProxy.imageInfo.rotationDegrees)
+                val resized = resizeWithAspectRatioAndPadding(rotated, 320)
+                val results = objectDetectorHelper.detect(resized)
+                binding.overlay.update(results, resized.width, resized.height)
+                saveBitmapToInternalStorage(requireContext(), resized)
+            }
+
         } catch (e: Exception) {
-            Log.e(TAG, "Error in processImageProxy: ${e.message}", e)
+            Log.e("GpuConvert", "Conversion failed", e)
         } finally {
-            // Ensure imageProxy is always closed, even if an exception occurs
             imageProxy.close()
         }
     }
+}
 
-    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap {
-        val yBuffer = imageProxy.planes[0].buffer
-        val uBuffer = imageProxy.planes[1].buffer
-        val vBuffer = imageProxy.planes[2].buffer
 
-        val ySize = yBuffer.remaining()
-        val uSize = uBuffer.remaining()
-        val vSize = vBuffer.remaining()
+    fun resizeWithAspectRatioAndPadding(bitmap: Bitmap, targetSize: Int): Bitmap {
+        val scale = targetSize.toFloat() / max(bitmap.width, bitmap.height)
+        val newWidth = (bitmap.width * scale).toInt()
+        val newHeight = (bitmap.height * scale).toInt()
 
-        val nv21 = ByteArray(ySize + uSize + vSize)
-        yBuffer.get(nv21, 0, ySize)
-        vBuffer.get(nv21, ySize, vSize)
-        uBuffer.get(nv21, ySize + vSize, uSize)
+        val scaled = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
+        val output = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
 
-        val yuvImage = YuvImage(nv21, ImageFormat.NV21, imageProxy.width, imageProxy.height, null)
-        val out = java.io.ByteArrayOutputStream()
-        yuvImage.compressToJpeg(Rect(0, 0, imageProxy.width, imageProxy.height), 100, out)
-        val imageBytes = out.toByteArray()
-        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
+        val canvas = Canvas(output)
+        val dx = ((targetSize - newWidth) / 2).toFloat()
+        val dy = ((targetSize - newHeight) / 2).toFloat()
+
+        canvas.drawColor(Color.BLACK)
+        canvas.drawBitmap(scaled, dx, dy, null)
+
+        return output
+    }
+    fun saveBitmapToInternalStorage(
+        context: Context,
+        bitmap: Bitmap,
+        filename: String = "model_input_${System.currentTimeMillis()}.png"
+    ) {
+        try {
+            val file = File(context.filesDir, filename)
+            FileOutputStream(file).use { outputStream ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+            }
+            Log.d("ImageDebug", "Saved image to: ${file.absolutePath}")
+        } catch (e: Exception) {
+            Log.e("ImageDebug", "Failed to save image: ${e.message}", e)
+        }
     }
 
-    private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Float): Bitmap {
-        val matrix = Matrix().apply { postRotate(rotationDegrees) }
-        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -168,9 +189,13 @@ class CameraFragment : Fragment() {
             cameraExecutor.shutdown()
         }
     }
-
+    override fun onDestroy() {
+        super.onDestroy()
+        glThread.quitSafely()
+    }
     companion object {
         private const val TAG = "CameraFragment"
         private const val REQUEST_CAMERA_PERMISSION = 10
     }
 }
+
