@@ -15,20 +15,15 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.tripi.databinding.FragmentCameraBinding
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.Color
+
 import com.example.tripi.ml.ObjectDetectionHelper
 
-import android.content.Context
-import android.os.Handler
-import android.os.HandlerThread
-import com.example.tripi.ImageUtils.rotateBitmap1
-import java.io.File
-import java.io.FileOutputStream
+
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
-import kotlin.math.max
+
+import com.example.tripi.utils.BitmapUtils.rotateBitmap
+import com.example.tripi.utils.BitmapUtils.resizeWithAspectRatioAndPadding
 
 class CameraFragment : Fragment() {
 
@@ -41,8 +36,8 @@ class CameraFragment : Fragment() {
     private val frameProcessingIntervalMs: Long = 200L // Process roughly every 1 second (1000 ms)
     private val modelInputSize = 320
 
-    private val glThread = HandlerThread("GLThread").apply { start() }
-    private val glHandler = Handler(glThread.looper)
+//    private val glThread = HandlerThread("GLThread").apply { start() }
+//    private val glHandler = Handler(glThread.looper)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -103,70 +98,26 @@ class CameraFragment : Fragment() {
 
     }
 
-//    private fun processImageProxy(imageProxy: ImageProxy) {
-//        val bitmap = imageProxyToBitmap(imageProxy)
-//        val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees.toFloat())
-//        val results: List<Detection> = objectDetectorHelper.detect(rotated)
-//        binding.overlay.update(results, rotated.width, rotated.height)
-//        imageProxy.close()
-//    }
+
 private fun processImageProxy(imageProxy: ImageProxy) {
-    glHandler.post {
-        try {
-            Log.d("GpuConvert", "Starting OpenGL conversion on thread: ${Thread.currentThread().name}")
+    try {
+        val bitmap = YuvtoRGBConverter.convert(imageProxy)
+        val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees)
+        val resized = resizeWithAspectRatioAndPadding(rotated, 320)
+        val results = objectDetectorHelper.detectFormatted(resized)
 
-            val bitmap = GpuYuvConverter.convert(imageProxy)
-
-            // You probably want to run this on the main thread:
-            requireActivity().runOnUiThread {
-                val rotated = rotateBitmap1(bitmap, imageProxy.imageInfo.rotationDegrees)
-                val resized = resizeWithAspectRatioAndPadding(rotated, 320)
-                val results = objectDetectorHelper.detect(resized)
-                binding.overlay.update(results, resized.width, resized.height)
-                saveBitmapToInternalStorage(requireContext(), resized)
-            }
-
-        } catch (e: Exception) {
-            Log.e("GpuConvert", "Conversion failed", e)
-        } finally {
-            imageProxy.close()
+        requireActivity().runOnUiThread {
+            binding.overlay.update(results, resized.width, resized.height)
         }
+
+    } catch (e: Exception) {
+        Log.e("CameraFragment", "Processing failed", e)
+    } finally {
+        imageProxy.close()
     }
 }
 
 
-    fun resizeWithAspectRatioAndPadding(bitmap: Bitmap, targetSize: Int): Bitmap {
-        val scale = targetSize.toFloat() / max(bitmap.width, bitmap.height)
-        val newWidth = (bitmap.width * scale).toInt()
-        val newHeight = (bitmap.height * scale).toInt()
-
-        val scaled = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
-        val output = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
-
-        val canvas = Canvas(output)
-        val dx = ((targetSize - newWidth) / 2).toFloat()
-        val dy = ((targetSize - newHeight) / 2).toFloat()
-
-        canvas.drawColor(Color.BLACK)
-        canvas.drawBitmap(scaled, dx, dy, null)
-
-        return output
-    }
-    fun saveBitmapToInternalStorage(
-        context: Context,
-        bitmap: Bitmap,
-        filename: String = "model_input_${System.currentTimeMillis()}.png"
-    ) {
-        try {
-            val file = File(context.filesDir, filename)
-            FileOutputStream(file).use { outputStream ->
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            }
-            Log.d("ImageDebug", "Saved image to: ${file.absolutePath}")
-        } catch (e: Exception) {
-            Log.e("ImageDebug", "Failed to save image: ${e.message}", e)
-        }
-    }
 
 
     override fun onRequestPermissionsResult(
@@ -191,7 +142,7 @@ private fun processImageProxy(imageProxy: ImageProxy) {
     }
     override fun onDestroy() {
         super.onDestroy()
-        glThread.quitSafely()
+//        glThread.quitSafely()
     }
     companion object {
         private const val TAG = "CameraFragment"

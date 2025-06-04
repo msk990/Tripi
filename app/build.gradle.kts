@@ -61,6 +61,9 @@ dependencies {
     implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
     implementation("com.google.mlkit:common:18.11.0")
     testImplementation(libs.junit)
+    testImplementation(libs.junit.jupiter)
+    testImplementation("org.robolectric:robolectric:4.11.1")
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }

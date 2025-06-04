@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
 /**
  * CPU-based YUV_420_888 to RGB Bitmap converter using YuvImage (green-goo-proof).
  */
-object GpuYuvConverter {
+object YuvtoRGBConverter {
 
     fun convert(image: ImageProxy): Bitmap {
         val width = image.width

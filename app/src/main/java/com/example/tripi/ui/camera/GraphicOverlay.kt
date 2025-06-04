@@ -1,12 +1,14 @@
 package com.example.tripi.ui.camera
 
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.View
-import org.tensorflow.lite.task.vision.detector.Detection
+import com.example.tripi.ml.DetectionResult
+import com.example.tripi.ui.camera.utils.StickerManager
+import androidx.core.graphics.toColorInt
+import com.example.tripi.ui.camera.utils.drawLabel
+import com.example.tripi.ui.camera.utils.scaleBox
 
 class GraphicOverlay @JvmOverloads constructor(
     context: Context,
@@ -15,25 +17,31 @@ class GraphicOverlay @JvmOverloads constructor(
 ) : View(context, attrs, defStyleAttr) {
 
     private val boxPaint = Paint().apply {
-        color = Color.parseColor("#ADD8E6")
+        color = "#00BCD4".toColorInt()
         style = Paint.Style.STROKE
-        strokeWidth = 8f
+        strokeWidth = 6f
+        isAntiAlias = true
+    }
+
+    private val textBackgroundPaint = Paint().apply {
+        color = Color.BLACK
+        style = Paint.Style.FILL
+        alpha = 160
     }
 
     private val textPaint = Paint().apply {
-        color = Color.RED
-        textSize = 48f
-        textAlign = Paint.Align.CENTER
-        style = Paint.Style.FILL
+        color = Color.WHITE
+        textSize = 42f
+        isAntiAlias = true
+        typeface = Typeface.DEFAULT_BOLD
     }
 
-
-    private var objects: List<Detection> = emptyList()
+    private var results: List<DetectionResult> = emptyList()
     private var scaleXFactor: Float = 1f
     private var scaleYFactor: Float = 1f
 
-    fun update(objects: List<Detection>, imageWidth: Int, imageHeight: Int) {
-        this.objects = objects
+    fun update(detections: List<DetectionResult>, imageWidth: Int, imageHeight: Int) {
+        this.results = detections
         scaleXFactor = width.toFloat() / imageWidth.toFloat()
         scaleYFactor = height.toFloat() / imageHeight.toFloat()
         invalidate()
@@ -41,19 +49,36 @@ class GraphicOverlay @JvmOverloads constructor(
 
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
-        for (obj in objects) {
-            val box = obj.boundingBox
-            val left = box.left * scaleXFactor
-            val top = box.top * scaleYFactor
-            val right = box.right * scaleXFactor
-            val bottom = box.bottom * scaleYFactor
-            canvas.drawRect(left, top, right, bottom, boxPaint)
-            val label = obj.categories.firstOrNull()?.label
-            if (label != null) {
-                val centerX = (left + right) / 2f
-                val centerY = (top + bottom) / 2f - (textPaint.ascent() + textPaint.descent()) / 2f
-                canvas.drawText(label, centerX, centerY, textPaint)
+
+        for (result in results) {
+            val box = scaleBox(result.boundingBox, scaleXFactor, scaleYFactor)
+            val labelText = "${result.label} ${(result.score * 100).toInt()}%"
+
+            // Draw bounding box and label
+            canvas.drawRect(box, boxPaint)
+
+            drawLabel(
+                canvas = canvas,
+                text = labelText,
+                box = box,
+                textPaint = textPaint,
+                backgroundPaint = textBackgroundPaint
+            )
+
+
+            // Draw sticker if available
+            val labelKey = result.label.lowercase()
+            val sticker = StickerManager.getScaledSticker(labelKey, (box.width() * 0.8f).toInt())
+            if (sticker != null) {
+                val centerX = box.centerX()
+                val centerY = box.centerY()
+                val left = centerX - sticker.width / 2f
+                val top = centerY - sticker.height / 2f
+                canvas.drawBitmap(sticker, left, top, null)
             }
         }
     }
+
+
+
 }

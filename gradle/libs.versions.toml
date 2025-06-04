@@ -16,6 +16,7 @@ cameraX = "1.4.2"
 mlkitObjectDetection = "17.0.2"
 objectDetection = "17.0.2"
 visionCommon = "17.3.0"
+junitJupiter = "5.8.1"
 
 [libraries]
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraX" }
@@ -37,6 +38,7 @@ androidx-camera-view = { group = "androidx.camera", name = "camera-view", versio
 mlkit-object-detection = { group = "com.google.mlkit", name = "object-detection", version.ref = "mlkitObjectDetection" }
 object1-detection-v1701 = { module = "com.google.mlkit:object-detection", version.ref = "objectDetection" }
 vision-common = { group = "com.google.mlkit", name = "vision-common", version.ref = "visionCommon" }
+junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitJupiter" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -27,4 +27,16 @@ class ObjectDetectionHelper(context: Context) {
         Log.e("ObjectDetectionHelper", "Detection failed", e)
         emptyList()
     }
+
+    fun detectFormatted(bitmap: Bitmap): List<DetectionResult> {
+        return detect(bitmap).flatMap { detection ->
+            detection.categories.map { category ->
+                DetectionResult(
+                    label = category.label,
+                    score = category.score,
+                    boundingBox = detection.boundingBox
+                )
+            }
+        }
+    }
 }
