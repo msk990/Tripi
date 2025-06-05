@@ -19,21 +19,32 @@ object BitmapUtils {
     }
 
     fun resizeWithAspectRatioAndPadding(bitmap: Bitmap, targetSize: Int): Bitmap {
-        val scale = targetSize.toFloat() / max(bitmap.width, bitmap.height)
+        val scale = targetSize.toFloat() / maxOf(bitmap.width, bitmap.height)
         val newWidth = (bitmap.width * scale).toInt()
         val newHeight = (bitmap.height * scale).toInt()
-        val scaled = bitmap.scale(newWidth, newHeight)
-        val output = createBitmap(targetSize, targetSize)
+        val scaled = Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, true)
 
+        val output = Bitmap.createBitmap(targetSize, targetSize, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(output)
-        val dx = ((targetSize - newWidth) / 2).toFloat()
-        val dy = ((targetSize - newHeight) / 2).toFloat()
 
-        canvas.drawColor(Color.BLACK)
-        canvas.drawBitmap(scaled, dx, dy, null)
+        val bgPaint = Paint().apply { color = Color.BLACK }
+        canvas.drawRect(0f, 0f, targetSize.toFloat(), targetSize.toFloat(), bgPaint)
 
+        val dx = ((targetSize - newWidth) / 2f)
+        val dy = ((targetSize - newHeight) / 2f)
+
+        val paint = Paint().apply {
+            isFilterBitmap = true
+            isAntiAlias = true
+            alpha = 255
+        }
+
+        canvas.drawBitmap(scaled, dx, dy, paint)
         return output
     }
+
+
+
 
     fun saveBitmapToInternalStorage(
         context: Context,

@@ -2,11 +2,13 @@ package com.example.tripi.ui.camera
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -15,15 +17,18 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.tripi.databinding.FragmentCameraBinding
-
 import com.example.tripi.ml.ObjectDetectionHelper
-
-
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-
+import com.example.tripi.ml.DetectionResult
+import com.example.tripi.stickers.model.StickerAssetMap
+import com.example.tripi.stickers.model.stickerTypeMap
+import com.example.tripi.stickers.ui.StickerOverlayManager
+import com.example.tripi.stickers.ui.StickerPlacementManager
+import com.example.tripi.ui.camera.utils.StickerManager
+import com.example.tripi.ui.camera.utils.scaleBox
 import com.example.tripi.utils.BitmapUtils.rotateBitmap
 import com.example.tripi.utils.BitmapUtils.resizeWithAspectRatioAndPadding
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
 
 class CameraFragment : Fragment() {
 
@@ -31,24 +36,36 @@ class CameraFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var objectDetectorHelper: ObjectDetectionHelper
-    @Volatile // Ensure visibility across threads
-    private var lastProcessedTimestampMs: Long = 0L
-    private val frameProcessingIntervalMs: Long = 200L // Process roughly every 1 second (1000 ms)
-    private val modelInputSize = 320
+    private lateinit var stickerOverlayManager: StickerOverlayManager
+    private lateinit var stickerPlacementManager: StickerPlacementManager
 
-//    private val glThread = HandlerThread("GLThread").apply { start() }
-//    private val glHandler = Handler(glThread.looper)
+
+    @Volatile
+    private var lastProcessedTimestampMs: Long = 0L
+    private val frameProcessingIntervalMs: Long = 200L
+    private val modelInputSize = 320
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         _binding = FragmentCameraBinding.inflate(inflater, container, false)
         cameraExecutor = Executors.newSingleThreadExecutor()
-
         objectDetectorHelper = ObjectDetectionHelper(requireContext())
+
+        stickerOverlayManager = StickerOverlayManager(
+            binding.overlayContainer,
+            requireContext(),
+            binding.konfettiView
+        )
+        stickerPlacementManager = StickerPlacementManager(binding.overlayContainer, stickerOverlayManager)
+
+
+        val assetMap = StickerAssetMap.loadFromJson(requireContext())
+        StickerManager.loadFromAssets(requireContext(), assetMap)
+
+
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
             == PackageManager.PERMISSION_GRANTED
         ) {
@@ -67,26 +84,20 @@ class CameraFragment : Fragment() {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
             val imageAnalyzer = ImageAnalysis.Builder()
-                // Model expects 320x320 input, so we could set it explicitly if desired
-                // .setTargetResolution(Size(modelInputSize, modelInputSize))
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // Important!
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also { analysis ->
                     analysis.setAnalyzer(cameraExecutor) { imageProxy ->
                         val currentTimeMs = System.currentTimeMillis()
                         if (currentTimeMs - lastProcessedTimestampMs >= frameProcessingIntervalMs) {
-                            // --- Time to process this frame ---
                             lastProcessedTimestampMs = currentTimeMs
-
-
                             processImageProxy(imageProxy)
-
                         } else {
-                            // Not time to process yet, close the image to release it
                             imageProxy.close()
                         }
                     }
                 }
+
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             try {
                 cameraProvider.unbindAll()
@@ -95,29 +106,26 @@ class CameraFragment : Fragment() {
                 Log.e(TAG, "Use case binding failed", e)
             }
         }, ContextCompat.getMainExecutor(requireContext()))
-
     }
 
+    private fun processImageProxy(imageProxy: ImageProxy) {
+        try {
+            val bitmap = YuvtoRGBConverter.convert(imageProxy)
+            val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees)
+            val resized = resizeWithAspectRatioAndPadding(rotated, modelInputSize)
+            val results = objectDetectorHelper.detectFormatted(resized)
+            Log.d("CameraFragment", "Detected ${results.size} objects")
 
-private fun processImageProxy(imageProxy: ImageProxy) {
-    try {
-        val bitmap = YuvtoRGBConverter.convert(imageProxy)
-        val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees)
-        val resized = resizeWithAspectRatioAndPadding(rotated, 320)
-        val results = objectDetectorHelper.detectFormatted(resized)
+            requireActivity().runOnUiThread {
+                stickerPlacementManager.showStickers(results, resized.width, resized.height)
 
-        requireActivity().runOnUiThread {
-            binding.overlay.update(results, resized.width, resized.height)
+            }
+        } catch (e: Exception) {
+            Log.e("CameraFragment", "Processing failed", e)
+        } finally {
+            imageProxy.close()
         }
-
-    } catch (e: Exception) {
-        Log.e("CameraFragment", "Processing failed", e)
-    } finally {
-        imageProxy.close()
     }
-}
-
-
 
 
     override fun onRequestPermissionsResult(
@@ -140,13 +148,13 @@ private fun processImageProxy(imageProxy: ImageProxy) {
             cameraExecutor.shutdown()
         }
     }
+
     override fun onDestroy() {
         super.onDestroy()
-//        glThread.quitSafely()
     }
+
     companion object {
         private const val TAG = "CameraFragment"
         private const val REQUEST_CAMERA_PERMISSION = 10
     }
 }
-

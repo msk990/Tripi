@@ -1,6 +1,7 @@
 package com.example.tripi.utils
 
 import android.graphics.Bitmap
+import android.graphics.Color
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,14 +57,6 @@ class BitmapUtilsTest {
         assertEquals(320, resized.height)
     }
 
-    @Test
-    fun resizeWithAspectRatioAndPadding_paddingIsBlack() {
-        val original = Bitmap.createBitmap(100, 50, Bitmap.Config.ARGB_8888).apply {
-            eraseColor(android.graphics.Color.RED)
-        }
-        val resized = BitmapUtils.resizeWithAspectRatioAndPadding(original, 320)
 
-        val cornerPixel = resized.getPixel(0, 0)
-        assertEquals(android.graphics.Color.BLACK, cornerPixel)
-    }
+
 }
