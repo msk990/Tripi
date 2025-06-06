@@ -2,11 +2,13 @@ package com.example.tripi.ui.camera
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.RectF
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -15,15 +17,16 @@ import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import com.example.tripi.databinding.FragmentCameraBinding
-import android.graphics.Bitmap
-import android.graphics.ImageFormat
-import android.graphics.Rect
-import android.graphics.YuvImage
-import android.graphics.Matrix
-import android.graphics.BitmapFactory
-import com.example.tripi.ui.camera.ObjectDetectionHelper
-import org.tensorflow.lite.task.vision.detector.Detection
-import java.io.ByteArrayOutputStream
+import com.example.tripi.ml.ObjectDetectionHelper
+import com.example.tripi.ml.DetectionResult
+import com.example.tripi.stickers.model.StickerAssetMap
+import com.example.tripi.stickers.model.stickerTypeMap
+import com.example.tripi.stickers.ui.StickerOverlayManager
+import com.example.tripi.stickers.ui.StickerPlacementManager
+import com.example.tripi.ui.camera.utils.StickerManager
+import com.example.tripi.ui.camera.utils.scaleBox
+import com.example.tripi.utils.BitmapUtils.rotateBitmap
+import com.example.tripi.utils.BitmapUtils.resizeWithAspectRatioAndPadding
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
@@ -33,11 +36,14 @@ class CameraFragment : Fragment() {
     private val binding get() = _binding!!
     private lateinit var cameraExecutor: ExecutorService
     private lateinit var objectDetectorHelper: ObjectDetectionHelper
-    @Volatile // Ensure visibility across threads
-    private var lastProcessedTimestampMs: Long = 0L
-    private val frameProcessingIntervalMs: Long = 200L // Process roughly every 1 second (1000 ms)
-    private val modelInputSize = 320
+    private lateinit var stickerOverlayManager: StickerOverlayManager
+    private lateinit var stickerPlacementManager: StickerPlacementManager
 
+
+    @Volatile
+    private var lastProcessedTimestampMs: Long = 0L
+    private val frameProcessingIntervalMs: Long = 200L
+    private val modelInputSize = 320
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -46,8 +52,20 @@ class CameraFragment : Fragment() {
     ): View {
         _binding = FragmentCameraBinding.inflate(inflater, container, false)
         cameraExecutor = Executors.newSingleThreadExecutor()
-
         objectDetectorHelper = ObjectDetectionHelper(requireContext())
+
+        stickerOverlayManager = StickerOverlayManager(
+            binding.overlayContainer,
+            requireContext(),
+            binding.konfettiView
+        )
+        stickerPlacementManager = StickerPlacementManager(binding.overlayContainer, stickerOverlayManager)
+
+
+        val assetMap = StickerAssetMap.loadFromJson(requireContext())
+        StickerManager.loadFromAssets(requireContext(), assetMap)
+
+
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
             == PackageManager.PERMISSION_GRANTED
         ) {
@@ -66,26 +84,20 @@ class CameraFragment : Fragment() {
                 it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
             }
             val imageAnalyzer = ImageAnalysis.Builder()
-                // Model expects 320x320 input, so we could set it explicitly if desired
-                // .setTargetResolution(Size(modelInputSize, modelInputSize))
-                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST) // Important!
+                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also { analysis ->
                     analysis.setAnalyzer(cameraExecutor) { imageProxy ->
                         val currentTimeMs = System.currentTimeMillis()
                         if (currentTimeMs - lastProcessedTimestampMs >= frameProcessingIntervalMs) {
-                            // --- Time to process this frame ---
                             lastProcessedTimestampMs = currentTimeMs
-
-
                             processImageProxy(imageProxy)
-
                         } else {
-                            // Not time to process yet, close the image to release it
                             imageProxy.close()
                         }
                     }
                 }
+
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
             try {
                 cameraProvider.unbindAll()
@@ -94,59 +106,27 @@ class CameraFragment : Fragment() {
                 Log.e(TAG, "Use case binding failed", e)
             }
         }, ContextCompat.getMainExecutor(requireContext()))
-
     }
 
-//    private fun processImageProxy(imageProxy: ImageProxy) {
-//        val bitmap = imageProxyToBitmap(imageProxy)
-//        val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees.toFloat())
-//        val results: List<Detection> = objectDetectorHelper.detect(rotated)
-//        binding.overlay.update(results, rotated.width, rotated.height)
-//        imageProxy.close()
-//    }
     private fun processImageProxy(imageProxy: ImageProxy) {
-
         try {
-            val bitmap = imageProxyToBitmap(imageProxy)
+            val bitmap = YuvtoRGBConverter.convert(imageProxy)
+            val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees)
+            val resized = resizeWithAspectRatioAndPadding(rotated, modelInputSize)
+            val results = objectDetectorHelper.detectFormatted(resized)
+            Log.d("CameraFragment", "Detected ${results.size} objects")
 
-            val results: List<Detection> = objectDetectorHelper.detect(
-                bitmap, // Pass the unrotated bitmap
-                imageProxy.imageInfo.rotationDegrees // Pass the rotation degrees
-            )
-            binding.overlay.update(results, 320, 320)
+            requireActivity().runOnUiThread {
+                stickerPlacementManager.showStickers(results, resized.width, resized.height)
+
+            }
         } catch (e: Exception) {
-            Log.e(TAG, "Error in processImageProxy: ${e.message}", e)
+            Log.e("CameraFragment", "Processing failed", e)
         } finally {
-            // Ensure imageProxy is always closed, even if an exception occurs
             imageProxy.close()
         }
     }
 
-    private fun imageProxyToBitmap(imageProxy: ImageProxy): Bitmap {
-        val yBuffer = imageProxy.planes[0].buffer
-        val uBuffer = imageProxy.planes[1].buffer
-        val vBuffer = imageProxy.planes[2].buffer
-
-        val ySize = yBuffer.remaining()
-        val uSize = uBuffer.remaining()
-        val vSize = vBuffer.remaining()
-
-        val nv21 = ByteArray(ySize + uSize + vSize)
-        yBuffer.get(nv21, 0, ySize)
-        vBuffer.get(nv21, ySize, vSize)
-        uBuffer.get(nv21, ySize + vSize, uSize)
-
-        val yuvImage = YuvImage(nv21, ImageFormat.NV21, imageProxy.width, imageProxy.height, null)
-        val out = java.io.ByteArrayOutputStream()
-        yuvImage.compressToJpeg(Rect(0, 0, imageProxy.width, imageProxy.height), 100, out)
-        val imageBytes = out.toByteArray()
-        return BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
-    }
-
-    private fun rotateBitmap(bitmap: Bitmap, rotationDegrees: Float): Bitmap {
-        val matrix = Matrix().apply { postRotate(rotationDegrees) }
-        return Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
-    }
 
     override fun onRequestPermissionsResult(
         requestCode: Int,
@@ -167,6 +147,10 @@ class CameraFragment : Fragment() {
         if (::cameraExecutor.isInitialized) {
             cameraExecutor.shutdown()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
     }
 
     companion object {

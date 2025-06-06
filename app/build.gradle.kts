@@ -57,8 +57,20 @@ dependencies {
     implementation(libs.androidx.camera.camera2)
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
+    implementation (libs.androidx.camera.extensions)
     implementation("org.tensorflow:tensorflow-lite-task-vision:0.4.4")
+    implementation("com.google.mlkit:common:18.11.0")
     testImplementation(libs.junit)
+    testImplementation(libs.junit.jupiter)
+    testImplementation(libs.robolectric)
+    testImplementation (libs.mockito.core)
+    testImplementation (libs.mockito.kotlin)
+    implementation ("nl.dionsegijn:konfetti-xml:2.0.4")
+    implementation ("nl.dionsegijn:konfetti-core:2.0.4")
+    implementation ("com.google.code.gson:gson:2.10.1")
+
+
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 }
