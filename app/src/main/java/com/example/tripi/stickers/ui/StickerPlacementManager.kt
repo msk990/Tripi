@@ -4,6 +4,7 @@ import android.graphics.RectF
 import android.util.Log
 import android.widget.FrameLayout
 import com.example.tripi.ml.DetectionResult
+import com.example.tripi.stickers.model.StickerAssetMap
 import com.example.tripi.ui.camera.utils.StickerManager
 import com.example.tripi.ui.camera.utils.scaleBox
 
@@ -21,8 +22,8 @@ class StickerPlacementManager(
         for (result in results) {
             val label = result.label.lowercase()
             val box: RectF = scaleBox(result.boundingBox, scaleX, scaleY)
-            val sticker = StickerManager.getScaledSticker(label, (box.width() * 0.8f).toInt())
-
+           // val sticker = StickerManager.getScaledSticker(label, (box.width() * 0.8f).toInt())
+            val sticker = StickerAssetMap.getBitmap(label)
             if (sticker != null) {
                 stickerOverlayManager.showSticker(label, box, sticker)
             } else {

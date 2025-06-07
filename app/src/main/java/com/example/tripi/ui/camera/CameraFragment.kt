@@ -57,14 +57,16 @@ class CameraFragment : Fragment() {
         stickerOverlayManager = StickerOverlayManager(
             binding.overlayContainer,
             requireContext(),
-            binding.konfettiView
+            binding.konfettiView,
+            binding.takePhotoButton
         )
         stickerPlacementManager = StickerPlacementManager(binding.overlayContainer, stickerOverlayManager)
 
 
-        val assetMap = StickerAssetMap.loadFromJson(requireContext())
-        StickerManager.loadFromAssets(requireContext(), assetMap)
+//        val assetMap = StickerAssetMap.loadFromJson(requireContext())
+//        StickerManager.loadFromAssets(requireContext(), assetMap)
 
+        StickerAssetMap.loadStickerData(requireContext())
 
         if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
             == PackageManager.PERMISSION_GRANTED
@@ -117,7 +119,11 @@ class CameraFragment : Fragment() {
             Log.d("CameraFragment", "Detected ${results.size} objects")
 
             requireActivity().runOnUiThread {
-                stickerPlacementManager.showStickers(results, resized.width, resized.height)
+                requireActivity().runOnUiThread {
+                    stickerOverlayManager.clear()
+                    stickerPlacementManager.showStickers(results, resized.width, resized.height)
+                }
+
 
             }
         } catch (e: Exception) {

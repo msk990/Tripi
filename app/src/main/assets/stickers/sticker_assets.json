@@ -1,4 +1,13 @@
 {
-  "laptop": "stickers/hi.png",
-  "bicycle": "stickers/sing.png"
+  "laptop": {
+    "image": "stickers/hi.png",
+    "description": "This is a shiny, shiny laptop and we love it dearly",
+    "type": "COLLECTIBLE"
+  },
+
+  "bicycle": {
+  "image": "stickers/sing.png",
+  "description": "This is a lovely bike. Oh, yeah!",
+  "type": "INTERACTIVE"
+  }
 }
