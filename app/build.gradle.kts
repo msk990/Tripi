@@ -1,6 +1,10 @@
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+//    id("org.jetbrains.kotlin.kapt")
+    alias(libs.plugins.ksp)
+
 }
 
 android {
@@ -68,7 +72,16 @@ dependencies {
     implementation ("nl.dionsegijn:konfetti-xml:2.0.4")
     implementation ("nl.dionsegijn:konfetti-core:2.0.4")
     implementation ("com.google.code.gson:gson:2.10.1")
+    // Room database
+    implementation ("androidx.room:room-runtime:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
+    // Kotlin coroutine support for Room
+    implementation ("androidx.room:room-ktx:2.6.1")
+
+    // Coroutines core
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
 
     androidTestImplementation(libs.androidx.junit)

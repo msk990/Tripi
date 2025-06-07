@@ -16,6 +16,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import com.example.tripi.databinding.FragmentCameraBinding
 import com.example.tripi.ml.ObjectDetectionHelper
 import com.example.tripi.ml.DetectionResult
@@ -23,6 +24,7 @@ import com.example.tripi.stickers.model.StickerAssetMap
 import com.example.tripi.stickers.model.stickerTypeMap
 import com.example.tripi.stickers.ui.StickerOverlayManager
 import com.example.tripi.stickers.ui.StickerPlacementManager
+import com.example.tripi.storage.StickerRepository
 import com.example.tripi.ui.camera.utils.StickerManager
 import com.example.tripi.ui.camera.utils.scaleBox
 import com.example.tripi.utils.BitmapUtils.rotateBitmap
@@ -53,13 +55,17 @@ class CameraFragment : Fragment() {
         _binding = FragmentCameraBinding.inflate(inflater, container, false)
         cameraExecutor = Executors.newSingleThreadExecutor()
         objectDetectorHelper = ObjectDetectionHelper(requireContext())
+//        StickerRepository.init(requireContext().applicationContext)
+
 
         stickerOverlayManager = StickerOverlayManager(
-            binding.overlayContainer,
-            requireContext(),
-            binding.konfettiView,
-            binding.takePhotoButton
+            container = binding.overlayContainer,
+            appContext = requireContext(),
+            konfettiView = binding.konfettiView,
+            takePhotoButton = binding.takePhotoButton,
+            coroutineScope = viewLifecycleOwner.lifecycleScope
         )
+
         stickerPlacementManager = StickerPlacementManager(binding.overlayContainer, stickerOverlayManager)
 
 

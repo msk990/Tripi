@@ -34,4 +34,16 @@
         android:name="com.example.tripi.ui.profile.ProfileFragment"
         android:label="@string/title_profile"
         tools:layout="@layout/fragment_profile" />
+    <fragment
+        android:id="@+id/navigation_collection"
+        android:name="com.example.tripi.ui.collection.StickerCollectionFragment"
+        android:label="Sticker Collection"
+        tools:layout="@layout/fragment_sticker_collection" />
+    <fragment
+        android:id="@+id/navigation_wallet"
+        android:name="com.example.tripi.ui.wallet.WalletFragment"
+        android:label="Wallet"
+        tools:layout="@layout/fragment_wallet" />
+
+
 </navigation>

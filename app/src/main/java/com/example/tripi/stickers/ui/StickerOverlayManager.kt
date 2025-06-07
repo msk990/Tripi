@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.RectF
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
@@ -19,7 +20,10 @@ import com.example.tripi.R
 import com.example.tripi.ml.DetectionResult
 import com.example.tripi.stickers.model.StickerAssetMap
 import com.example.tripi.stickers.model.StickerType
+import com.example.tripi.storage.StickerRepository
 import com.example.tripi.ui.camera.utils.scaleBox
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import nl.dionsegijn.konfetti.core.Party
 import nl.dionsegijn.konfetti.core.Position
 import nl.dionsegijn.konfetti.core.models.Size
@@ -31,7 +35,8 @@ class StickerOverlayManager(
     private val container: FrameLayout,
     private val appContext: Context,
     private val konfettiView: KonfettiView,
-    private val takePhotoButton: Button
+    private val takePhotoButton: Button,
+    private val coroutineScope: CoroutineScope
 ) {
 
     fun clear() {
@@ -143,10 +148,16 @@ class StickerOverlayManager(
         dialogView.findViewById<ImageView>(R.id.stickerImage).setImageBitmap(sticker)
         dialogView.findViewById<TextView>(R.id.stickerTitle).text = label
         dialogView.findViewById<TextView>(R.id.stickerDescription).text = description
+
         dialogView.findViewById<Button>(R.id.collectButton).setOnClickListener {
+            coroutineScope.launch {
+                StickerRepository.collect(label)
+            }
+
             onCollect()
             dialog.dismiss()
         }
+
 
         dialog.show()
     }
@@ -161,8 +172,16 @@ class StickerOverlayManager(
 
         dialogView.findViewById<ImageView>(R.id.rewardStickerImage).setImageBitmap(sticker)
         dialogView.findViewById<Button>(R.id.rewardCloseButton).setOnClickListener {
+            coroutineScope.launch {
+                Log.d("Overlay", "Adding 10 points...")
+                StickerRepository.addPoints(10)
+
+//                walletViewModel.incrementPoints(10)
+
+            }
             onClose()
             dialog.dismiss()
+
         }
 
         dialog.show()

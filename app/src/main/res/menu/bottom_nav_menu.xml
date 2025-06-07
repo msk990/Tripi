@@ -2,10 +2,10 @@
 <menu xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item
-        android:id="@+id/navigation_farm"
-        android:icon="@drawable/outline_add_business_24"
-        android:title="@string/title_farm" />
+<!--    <item-->
+<!--        android:id="@+id/navigation_farm"-->
+<!--        android:icon="@drawable/outline_add_business_24"-->
+<!--        android:title="@string/title_farm" />-->
 
     <item
         android:id="@+id/navigation_map"
@@ -22,9 +22,18 @@
         android:icon="@drawable/ic_quests_black_24dp"
         android:title="@string/title_quests" />
 
+<!--    <item-->
+<!--        android:id="@+id/navigation_profile"-->
+<!--        android:icon="@drawable/outline_accessibility_24"-->
+<!--        android:title="@string/title_profile" />-->
     <item
-        android:id="@+id/navigation_profile"
+        android:id="@+id/navigation_collection"
         android:icon="@drawable/outline_accessibility_24"
-        android:title="@string/title_profile" />
+        android:title="Sticker Collection" />
+    <item
+        android:id="@+id/navigation_wallet"
+        android:icon="@drawable/outline_add_business_24"
+        android:title="Wallet" />
+
 
 </menu>
