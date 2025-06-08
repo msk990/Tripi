@@ -8,19 +8,20 @@
 <!--        android:title="@string/title_farm" />-->
 
     <item
+        android:id="@+id/navigation_quests"
+        android:icon="@drawable/explore_24dp"
+        android:title="@string/title_quests" />
+    <item
         android:id="@+id/navigation_map"
-        android:icon="@drawable/outline_add_location_24"
+        android:icon="@drawable/location_on_24dp"
         android:title="@string/title_map" />
 
     <item
         android:id="@+id/navigation_camera"
-        android:icon="@drawable/baseline_camera_alt_24"
+        android:icon="@drawable/photo_camera_24dp"
         android:title="@string/title_camera" />
 
-    <item
-        android:id="@+id/navigation_quests"
-        android:icon="@drawable/ic_quests_black_24dp"
-        android:title="@string/title_quests" />
+
 
 <!--    <item-->
 <!--        android:id="@+id/navigation_profile"-->
@@ -28,12 +29,16 @@
 <!--        android:title="@string/title_profile" />-->
     <item
         android:id="@+id/navigation_collection"
-        android:icon="@drawable/outline_accessibility_24"
-        android:title="Sticker Collection" />
+        android:icon="@drawable/note_stack_24dp"
+        android:title="Collections" />
+<!--    <item-->
+<!--        android:id="@+id/navigation_wallet"-->
+<!--        android:icon="@drawable/outline_add_business_24"-->
+<!--        android:title="Wallet" />-->
     <item
-        android:id="@+id/navigation_wallet"
-        android:icon="@drawable/outline_add_business_24"
-        android:title="Wallet" />
+        android:id="@+id/navigation_network"
+        android:icon="@drawable/storefront_24dp"
+        android:title="Network" />
 
 
 </menu>

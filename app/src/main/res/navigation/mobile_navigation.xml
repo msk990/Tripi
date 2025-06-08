@@ -3,13 +3,18 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_farm">
+    app:startDestination="@+id/navigation_camera">
 
     <fragment
         android:id="@+id/navigation_farm"
         android:name="com.example.tripi.ui.farm.FarmFragment"
         android:label="@string/title_farm"
         tools:layout="@layout/fragment_farm" />
+    <fragment
+        android:id="@+id/navigation_network"
+        android:name="com.example.tripi.ui.network.NetworkFragment"
+        android:label="Network"
+        tools:layout="@layout/fragment_network" />
 
     <fragment
         android:id="@+id/navigation_map"
@@ -37,7 +42,7 @@
     <fragment
         android:id="@+id/navigation_collection"
         android:name="com.example.tripi.ui.collection.StickerCollectionFragment"
-        android:label="Sticker Collection"
+        android:label="Collections"
         tools:layout="@layout/fragment_sticker_collection" />
     <fragment
         android:id="@+id/navigation_wallet"

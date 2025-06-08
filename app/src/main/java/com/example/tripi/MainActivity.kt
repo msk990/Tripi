@@ -5,12 +5,15 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
+import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.tripi.databinding.ActivityMainBinding
 import com.example.tripi.storage.StickerRepository
 import com.google.android.material.bottomnavigation.BottomNavigationView
+import com.google.android.material.appbar.MaterialToolbar
 
 class MainActivity : AppCompatActivity() {
 
@@ -21,32 +24,44 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        // Init repository
         StickerRepository.init(applicationContext)
+
+        // Inflate view
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         val navView: BottomNavigationView = binding.navView
+        val toolbarContainer = binding.toolbarContainer
+        val secondaryToolbar: MaterialToolbar = binding.secondaryToolbar
 
-        // Get NavController from NavHostFragment
+        // Setup NavController
         val navHostFragment = supportFragmentManager
             .findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
         val navController = navHostFragment.navController
 
         // Define bottom nav destinations
         val bottomNavDestinations = setOf(
+            R.id.navigation_quests,
             R.id.navigation_map,
             R.id.navigation_camera,
-            R.id.navigation_quests,
             R.id.navigation_collection,
-            R.id.navigation_wallet
+            R.id.navigation_network
         )
 
         val appBarConfiguration = AppBarConfiguration(bottomNavDestinations)
+
+        // Setup ActionBar for inner screens (uses secondary toolbar)
+        setSupportActionBar(secondaryToolbar)
+        setupActionBarWithNavController(navController, appBarConfiguration)
+        secondaryToolbar.setupWithNavController(navController, appBarConfiguration)
+
+        // Setup bottom nav
         navView.setupWithNavController(navController)
 
-        // ✅ Inflate and attach the custom toolbar
-        val toolbarContainer = binding.toolbarContainer
-        val customToolbar = LayoutInflater.from(this).inflate(R.layout.custom_toolbar, toolbarContainer, false)
+        // Inflate and set up custom toolbar (for bottom nav screens)
+        val customToolbar = LayoutInflater.from(this)
+            .inflate(R.layout.custom_toolbar, toolbarContainer, false)
         toolbarContainer.addView(customToolbar)
 
         profileIcon = customToolbar.findViewById(R.id.profileIcon)
@@ -60,12 +75,14 @@ class MainActivity : AppCompatActivity() {
             navController.navigate(R.id.navigation_wallet)
         }
 
-        // ✅ Show/hide toolbar based on destination
+        // Switch toolbar based on destination
         navController.addOnDestinationChangedListener { _, destination, _ ->
             if (destination.id in bottomNavDestinations) {
                 toolbarContainer.visibility = View.VISIBLE
+                secondaryToolbar.visibility = View.GONE
             } else {
                 toolbarContainer.visibility = View.GONE
+                secondaryToolbar.visibility = View.VISIBLE
             }
         }
     }
