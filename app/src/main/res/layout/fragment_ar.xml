@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/ar_fragment_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#000000">
+
+    <!-- AR View placeholder (replace with ARCore or SceneView later) -->
+    <TextView
+        android:id="@+id/ar_placeholder_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Welcome to AR Mode 🎯"
+        android:textSize="24sp"
+        android:textColor="#FFFFFF"
+        android:layout_gravity="center" />
+
+</FrameLayout>

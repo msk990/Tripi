@@ -16,11 +16,11 @@
         android:label="Network"
         tools:layout="@layout/fragment_network" />
 
-    <fragment
-        android:id="@+id/navigation_map"
-        android:name="com.example.tripi.ui.map.MapFragment"
-        android:label="@string/title_map"
-        tools:layout="@layout/fragment_map" />
+<!--    <fragment-->
+<!--        android:id="@+id/navigation_map"-->
+<!--        android:name="com.example.tripi.ui.map.MapFragment"-->
+<!--        android:label="@string/title_map"-->
+<!--        tools:layout="@layout/fragment_map" />-->
 
     <fragment
         android:id="@+id/navigation_camera"
@@ -49,6 +49,26 @@
         android:name="com.example.tripi.ui.wallet.WalletFragment"
         android:label="Wallet"
         tools:layout="@layout/fragment_wallet" />
+    <fragment
+        android:id="@+id/navigation_map"
+        android:name="com.example.tripi.ui.map.MapFragment"
+        android:label="Map"
+        tools:layout="@layout/fragment_map">
+
+        <action
+            android:id="@+id/action_navigation_map_to_arFragment"
+            app:destination="@id/arFragment" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/arFragment"
+        android:name="com.example.tripi.ui.ar.ArFragment"
+        android:label="AR">
+
+        <argument
+            android:name="markerName"
+            app:argType="string" />
+    </fragment>
 
 
 </navigation>

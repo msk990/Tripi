@@ -6,6 +6,7 @@ import android.view.View
 import android.widget.ImageView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -40,6 +41,12 @@ class MainActivity : AppCompatActivity() {
             .findFragmentById(R.id.nav_host_fragment_activity_main) as NavHostFragment
         val navController = navHostFragment.navController
 
+        val navOptions = NavOptions.Builder()
+            .setLaunchSingleTop(true)
+            .setPopUpTo(navController.graph.startDestinationId, false)
+            .build()
+
+
         // Define bottom nav destinations
         val bottomNavDestinations = setOf(
             R.id.navigation_quests,
@@ -68,12 +75,13 @@ class MainActivity : AppCompatActivity() {
         walletIcon = customToolbar.findViewById(R.id.walletIcon)
 
         profileIcon.setOnClickListener {
-            navController.navigate(R.id.navigation_profile)
+            navController.navigate(R.id.navigation_profile, null, navOptions)
         }
 
         walletIcon.setOnClickListener {
-            navController.navigate(R.id.navigation_wallet)
+            navController.navigate(R.id.navigation_wallet, null, navOptions)
         }
+
 
         // Switch toolbar based on destination
         navController.addOnDestinationChangedListener { _, destination, _ ->

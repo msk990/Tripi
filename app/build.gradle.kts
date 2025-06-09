@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
 //    id("org.jetbrains.kotlin.kapt")
     alias(libs.plugins.ksp)
+    alias(libs.plugins.navigation.safe.args)
 
 }
 
@@ -82,6 +83,14 @@ dependencies {
     // Coroutines core
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation ("com.google.android.gms:play-services-maps:18.2.0")
+    implementation ("com.google.android.gms:play-services-location:21.0.1")
+
+    implementation(libs.sceneview)
+
+
+
+
 
 
     androidTestImplementation(libs.androidx.junit)

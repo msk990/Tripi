@@ -1,0 +1,20 @@
+[
+  {
+    "title": "Ice Cream Spot",
+    "lat": 42.4977,
+    "lng": 27.4700,
+    "icon": "ic_marker_ice_cream"
+  },
+  {
+    "title": "Angry Seagull Zone",
+    "lat": 42.4985,
+    "lng": 27.4720,
+    "icon": "ic_marker_seagull"
+  },
+  {
+    "title": "Burger Heaven",
+    "lat": 42.4990,
+    "lng": 27.4710,
+    "icon": "ic_marker_burger"
+  }
+]

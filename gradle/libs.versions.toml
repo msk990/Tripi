@@ -21,6 +21,8 @@ objectDetection = "17.0.2"
 robolectric = "4.11.1"
 visionCommon = "17.3.0"
 junitJupiter = "5.8.1"
+navigation = "2.9.0"
+sceneview = "1.21.0"
 
 [libraries]
 androidx-camera-core = { module = "androidx.camera:camera-core", version.ref = "cameraX" }
@@ -48,9 +50,12 @@ object1-detection-v1701 = { module = "com.google.mlkit:object-detection", versio
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 vision-common = { group = "com.google.mlkit", name = "vision-common", version.ref = "visionCommon" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitJupiter" }
+sceneview = { module = "io.github.sceneview:sceneview", version.ref = "sceneview" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version = "2.0.21-1.0.28" }
+navigation-safe-args = { id = "androidx.navigation.safeargs", version.ref = "navigation" }
+
 
