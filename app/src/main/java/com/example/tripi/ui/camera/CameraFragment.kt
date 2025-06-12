@@ -46,6 +46,8 @@ class CameraFragment : Fragment() {
     private var lastProcessedTimestampMs: Long = 0L
     private val frameProcessingIntervalMs: Long = 200L
     private val modelInputSize = 320
+    @Volatile
+    private var skipFrames = 2
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -84,60 +86,127 @@ class CameraFragment : Fragment() {
         return binding.root
     }
 
+//    private fun startCamera() {
+//        val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+//        cameraProviderFuture.addListener({
+//            val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
+//            val preview = Preview.Builder().build().also {
+//
+//                it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
+//            }
+//            val imageAnalyzer = ImageAnalysis.Builder()
+//                .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+//                .build()
+//                .also { analysis ->
+//                    analysis.setAnalyzer(cameraExecutor) { imageProxy ->
+//                        val currentTimeMs = System.currentTimeMillis()
+//                        if (currentTimeMs - lastProcessedTimestampMs >= frameProcessingIntervalMs) {
+//                            lastProcessedTimestampMs = currentTimeMs
+//                            processImageProxy(imageProxy)
+//                        } else {
+//                            imageProxy.close()
+//                        }
+//                    }
+//                }
+//
+//            val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+//            try {
+//                cameraProvider.unbindAll()
+//                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+//            } catch (e: Exception) {
+//                Log.e(TAG, "Use case binding failed", e)
+//            }
+//        }, ContextCompat.getMainExecutor(requireContext()))
+//    }
+
     private fun startCamera() {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(requireContext())
+
         cameraProviderFuture.addListener({
             val cameraProvider: ProcessCameraProvider = cameraProviderFuture.get()
-            val preview = Preview.Builder().build().also {
-                it.setSurfaceProvider(binding.viewFinder.surfaceProvider)
-            }
+
+            // First, build your analyzer
             val imageAnalyzer = ImageAnalysis.Builder()
                 .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 .build()
                 .also { analysis ->
                     analysis.setAnalyzer(cameraExecutor) { imageProxy ->
-                        val currentTimeMs = System.currentTimeMillis()
-                        if (currentTimeMs - lastProcessedTimestampMs >= frameProcessingIntervalMs) {
-                            lastProcessedTimestampMs = currentTimeMs
-                            processImageProxy(imageProxy)
-                        } else {
+                        try {
+                            if (skipFrames > 0) {
+                                skipFrames--
+                                Log.d(TAG, "Skipping warm-up frame")
+                                return@setAnalyzer  // Don't process, just return
+                            }
+
+                            val currentTimeMs = System.currentTimeMillis()
+                            if (currentTimeMs - lastProcessedTimestampMs >= frameProcessingIntervalMs) {
+                                lastProcessedTimestampMs = currentTimeMs
+                                processImageProxy(imageProxy)
+                            }
+                        } catch (e: Exception) {
+                            Log.e(TAG, "Analyzer error", e)
+                        } finally {
                             imageProxy.close()
                         }
                     }
+
                 }
 
+            // THEN build preview (after analyzer)
+            val preview = Preview.Builder().build().also {
+                it.surfaceProvider = binding.viewFinder.surfaceProvider
+            }
+
             val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
             try {
                 cameraProvider.unbindAll()
-                cameraProvider.bindToLifecycle(this, cameraSelector, preview, imageAnalyzer)
+                cameraProvider.bindToLifecycle(
+                    this,
+                    cameraSelector,
+                    preview,
+                    imageAnalyzer
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Use case binding failed", e)
             }
         }, ContextCompat.getMainExecutor(requireContext()))
     }
 
+
     private fun processImageProxy(imageProxy: ImageProxy) {
         try {
-            val bitmap = YuvtoRGBConverter.convert(imageProxy)
+            // ❗ Wrap the conversion too
+            val bitmap = try {
+                YuvtoRGBConverter.convert(imageProxy)
+            } catch (e: Exception) {
+                Log.e(TAG, "Image conversion failed", e)
+                return  // We return here, but still hit finally to close
+            }
+
             val rotated = rotateBitmap(bitmap, imageProxy.imageInfo.rotationDegrees)
             val resized = resizeWithAspectRatioAndPadding(rotated, modelInputSize)
             val results = objectDetectorHelper.detectFormatted(resized)
-            Log.d("CameraFragment", "Detected ${results.size} objects")
+
+            Log.d(TAG, "Detected ${results.size} objects")
 
             requireActivity().runOnUiThread {
-                requireActivity().runOnUiThread {
-                    stickerOverlayManager.clear()
-                    stickerPlacementManager.showStickers(results, resized.width, resized.height)
-                }
-
-
+                stickerOverlayManager.clear()
+                stickerPlacementManager.showStickers(results, resized.width, resized.height)
             }
+
         } catch (e: Exception) {
-            Log.e("CameraFragment", "Processing failed", e)
+            Log.e(TAG, "Image processing failed", e)
         } finally {
-            imageProxy.close()
+            // ✅ ALWAYS close, no matter what happens
+            try {
+                imageProxy.close()
+            } catch (closeEx: Exception) {
+                Log.w(TAG, "Error closing imageProxy", closeEx)
+            }
         }
     }
+
 
 
     override fun onRequestPermissionsResult(

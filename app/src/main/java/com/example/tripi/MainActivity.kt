@@ -49,7 +49,8 @@ class MainActivity : AppCompatActivity() {
 
         // Define bottom nav destinations
         val bottomNavDestinations = setOf(
-            R.id.navigation_quests,
+//            R.id.navigation_quests,
+            R.id.navigation_quest_list,
             R.id.navigation_map,
             R.id.navigation_camera,
             R.id.navigation_collection,

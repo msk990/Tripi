@@ -70,7 +70,7 @@ class MapFragment : Fragment(), OnMapReadyCallback {
                 Log.w("MapFragment", "⚠️ Missing icon: '${marker.icon}', using fallback.")
             }
 
-            val icon = resizeMarkerIcon(validResId, 100, 100, requireContext())
+            val icon = resizeMarkerIcon(validResId, 300, 300, requireContext())
 
             googleMap.addMarker(
                 MarkerOptions()

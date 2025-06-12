@@ -50,7 +50,7 @@ object1-detection-v1701 = { module = "com.google.mlkit:object-detection", versio
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 vision-common = { group = "com.google.mlkit", name = "vision-common", version.ref = "visionCommon" }
 junit-jupiter = { group = "org.junit.jupiter", name = "junit-jupiter", version.ref = "junitJupiter" }
-sceneview = { module = "io.github.sceneview:sceneview", version.ref = "sceneview" }
+#sceneview = { module = "io.github.sceneview:sceneview", version.ref = "sceneview" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -33,6 +33,25 @@
         android:name="com.example.tripi.ui.quests.QuestsFragment"
         android:label="@string/title_quests"
         tools:layout="@layout/fragment_quests" />
+    <fragment
+        android:id="@+id/navigation_quest_list"
+        android:name="com.example.tripi.ui.quests.QuestListFragment"
+        tools:layout="@layout/fragment_quest_list"
+        android:label="Quests">
+
+        <action
+            android:id="@+id/action_to_questDetail"
+            app:destination="@id/questDetailFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/questDetailFragment"
+        android:name="com.example.tripi.ui.quests.QuestDetailFragment"
+        android:label="Quest Detail">
+        <argument
+            android:name="questId"
+            app:argType="string" />
+    </fragment>
+
 
     <fragment
         android:id="@+id/navigation_profile"

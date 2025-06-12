@@ -7,8 +7,12 @@
 <!--        android:icon="@drawable/outline_add_business_24"-->
 <!--        android:title="@string/title_farm" />-->
 
+<!--    <item-->
+<!--        android:id="@+id/navigation_quests"-->
+<!--        android:icon="@drawable/explore_24dp"-->
+<!--        android:title="@string/title_quests" />-->
     <item
-        android:id="@+id/navigation_quests"
+        android:id="@+id/navigation_quest_list"
         android:icon="@drawable/explore_24dp"
         android:title="@string/title_quests" />
     <item
